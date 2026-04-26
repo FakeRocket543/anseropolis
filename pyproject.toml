@@ -1,0 +1,14 @@
+[project]
+name = "anseropolis"
+version = "0.1.0"
+description = "鵝改場 — 謠言查核 pipeline"
+requires-python = ">=3.11"
+dependencies = ["numpy>=1.24", "jieba>=0.42"]
+
+[project.optional-dependencies]
+ml = ["sentence-transformers>=3.0", "mlx>=0.18"]
+ckip = ["ckip-transformers>=0.3"]
+serve = ["fastapi>=0.110", "uvicorn>=0.29"]
+
+[project.scripts]
+anseropolis = "src.run:main"

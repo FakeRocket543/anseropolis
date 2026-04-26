@@ -1,0 +1,7 @@
+output/
+.env
+__pycache__/
+*.pyc
+
+# Large embeddings — except the public report index (28MB, required for match)
+# data/report_embeddings.npz is tracked

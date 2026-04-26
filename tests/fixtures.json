@@ -1,0 +1,72 @@
+[
+  {
+    "id": "test_001",
+    "text": "網傳美國已正式宣布放棄台灣，F-16戰機全數扣留不交付",
+    "category": "國際/政治",
+    "expected_match": "high",
+    "notes": "已知 TFC 查過類似的（#137781）"
+  },
+  {
+    "id": "test_002",
+    "text": "千萬注意！吃隔夜飯會產生大量黃麴毒素，嚴重致癌",
+    "category": "健康",
+    "expected_match": "variant",
+    "notes": "食安恐慌類，TFC 查過多則類似"
+  },
+  {
+    "id": "test_003",
+    "text": "震驚！中國宣布2027年武統台灣，解放軍已進入一級戰備",
+    "category": "國際/軍事",
+    "expected_match": "variant",
+    "notes": "武統類謠言，TFC 有查過但角度不同"
+  },
+  {
+    "id": "test_004",
+    "text": "賴清德秘密帳戶曝光，海外資產超過三十億",
+    "category": "政治",
+    "expected_match": "none",
+    "notes": "政治人物假爆料，可能是新謠言"
+  },
+  {
+    "id": "test_005",
+    "text": "快轉！台積電確定整廠搬遷美國，台灣將失去半導體產業",
+    "category": "科技/經濟",
+    "expected_match": "variant",
+    "notes": "台積電相關謠言反覆出現"
+  },
+  {
+    "id": "test_006",
+    "text": "LINE收到這個連結千萬不要點，手機會被駭客入侵盜取個資",
+    "category": "科技資安",
+    "expected_match": "high",
+    "notes": "詐騙/資安類，TFC 大量查過"
+  },
+  {
+    "id": "test_007",
+    "text": "研究證實每天喝咖啡超過三杯會導致骨質疏鬆和心臟病",
+    "category": "健康",
+    "expected_match": "variant",
+    "notes": "健康飲食類，部分正確部分誇大"
+  },
+  {
+    "id": "test_008",
+    "text": "印度移工來台搶工作，政府開放50萬名額，台灣勞工將被取代",
+    "category": "政治/政策",
+    "expected_match": "high",
+    "notes": "2025年熱門議題，TFC 有查"
+  },
+  {
+    "id": "test_009",
+    "text": "歐陽娜娜已被註銷中華民國國籍，確認放棄台灣身分",
+    "category": "政治/娛樂",
+    "expected_match": "high",
+    "notes": "TFC #140158 查過完全相同的"
+  },
+  {
+    "id": "test_010",
+    "text": "馬克宏宣布法國退出北約，歐洲安全體系面臨崩潰",
+    "category": "國際",
+    "expected_match": "none",
+    "notes": "國際假新聞，TFC 可能沒查過這則"
+  }
+]
