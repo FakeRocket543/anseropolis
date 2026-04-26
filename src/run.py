@@ -63,9 +63,14 @@ def run(text: str, output_dir: str = None) -> dict:
 
     # 4. Decompose
     _log("拆解聲明… (LLM)")
-    decompose_result = decompose(text)
-    claims = decompose_result.get("claims", [])
-    _log(f"  拆出 {len(claims)} 則聲明")
+    decompose_result = {"claims": []}
+    try:
+        decompose_result = decompose(text)
+        claims = decompose_result.get("claims", [])
+        _log(f"  拆出 {len(claims)} 則聲明")
+    except ConnectionError:
+        _log("  ⏭ LLM 不可用，跳過聲明拆解（留給 IDE agent 處理）")
+        claims = []
 
     # 5. Retrieve
     retrieve_result = None
@@ -76,11 +81,13 @@ def run(text: str, output_dir: str = None) -> dict:
             for c in retrieve_result:
                 v = c.get("assessment", {}).get("verdict", "?")
                 _log(f"  [{v}] {c['text'][:40]}")
+        except ConnectionError:
+            _log("  ⏭ LLM 不可用，跳過證據評估（留給 IDE agent 處理）")
         except Exception:
             _log(f"  ⚠ 證據檢索失敗，繼續組裝題目包")
             traceback.print_exc()
-    else:
-        _log("  無聲明可檢索")
+    elif not claims:
+        _log("  ⏭ 無聲明（LLM 未啟用或無可查核內容）")
 
     # 6. Package
     _log("組裝題目包…")

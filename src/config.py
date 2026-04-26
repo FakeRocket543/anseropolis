@@ -14,6 +14,9 @@ OUTPUT_DIR = Path(os.environ.get("ANSEROPOLIS_OUTPUT", str(ANSEROPOLIS_ROOT / "o
 
 LLM_URL = os.environ.get("ANSEROPOLIS_LLM_URL", "http://localhost:8080/v1/chat/completions")
 
+# Empty string = explicitly disabled
+LLM_AVAILABLE = bool(LLM_URL)
+
 # Optional ML model dirs — None means "skip that feature"
 CKIP_MODEL_DIR = os.environ.get("ANSEROPOLIS_CKIP_DIR") or None
 CKIP_BATCH_PY = os.environ.get("ANSEROPOLIS_CKIP_BATCH_PY") or None  # path to ckip_batch.py
