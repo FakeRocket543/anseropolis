@@ -32,6 +32,16 @@ _POS_MAP = {
 # 事件：動詞類 POS（需與名詞組合才有意義，單獨保留長度>=2的）
 _EVENT_POS = {"VA", "VB", "VC", "VD", "VH", "VJ", "v", "vn"}
 
+# Stopwords：常見虛詞、副詞、連接詞，不應被標為實體
+_STOPWORDS = {
+    "不慎", "結果", "不幸", "只有", "已經", "可能", "應該", "因為", "所以",
+    "但是", "然而", "雖然", "如果", "就是", "這個", "那個", "什麼", "怎麼",
+    "非常", "特別", "一定", "必須", "已經", "曾經", "正在", "將會", "可以",
+    "需要", "開始", "繼續", "發生", "進行", "表示", "認為", "指出", "顯示",
+    "根據", "透過", "關於", "對於", "由於", "為了", "以及", "或者", "而且",
+    "不要", "沒有", "不是", "就會", "還是", "其他", "目前", "近日", "日前",
+}
+
 # 數字 regex（補捉 POS 漏掉的）
 _NUM_RE = re.compile(
     r"[\d,]+\.?\d*\s*[%％萬億兆千百十]?"
@@ -50,7 +60,7 @@ def extract_entities(ws: list[str], pos: list[str]) -> list[dict]:
     seen = set()
 
     for i, (w, p) in enumerate(zip(ws, pos)):
-        if len(w.strip()) == 0:
+        if len(w.strip()) == 0 or w in _STOPWORDS:
             continue
 
         etype = _POS_MAP.get(p)
