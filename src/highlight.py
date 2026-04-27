@@ -18,7 +18,7 @@ import re
 
 _POS_MAP = {
     # 人
-    "Nb": "person", "nr": "person", "NR": "person",
+    "Nb": "person", "nr": "person", "NR": "person", "nrt": "person", "nrfg": "person",
     # 機構
     "Nc": "org", "nt": "org", "NT": "org",
     # 地
