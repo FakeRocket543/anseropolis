@@ -174,6 +174,11 @@ def ingest(text: str, compute_embedding: bool = True) -> dict:
         "elapsed": round(time.time() - t0, 2),
     }
 
+    # 重點實體提示器（CEUR-WS 2025 Claim Rewriting 方法）
+    from src.highlight import extract_entities, entity_queries
+    result["entities"] = extract_entities(ckip["ws"], ckip["pos"])
+    result["entity_queries"] = entity_queries(result["entities"])
+
     if compute_embedding:
         emb = embed_text(text)
         if emb is not None:
