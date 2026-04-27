@@ -16,6 +16,7 @@ def _log(msg: str):
 def run(text: str, output_dir: str = None) -> dict:
     """Run full pipeline on text. Returns package dict."""
     from src.ingest import ingest
+    from src.ingest import embed_text
     from src.match import match
     from src.decompose import decompose
     from src.retrieve import retrieve
@@ -71,6 +72,23 @@ def run(text: str, output_dir: str = None) -> dict:
     except ConnectionError:
         _log("  ⏭ LLM 不可用，跳過聲明拆解（留給 IDE agent 處理）")
         claims = []
+
+    # 4.5 Claim-level match（每個聲明分別比對謠言庫）
+    if claims:
+        _log("逐條比對謠言庫…")
+        for c in claims:
+            try:
+                c_emb = embed_text(c["text"]) if embed_text else None
+                c_kws = c["text"].split()
+                c_matches = match(query_embedding=c_emb, top_k=2, keywords=c_kws)
+                c["rumor_matches"] = c_matches
+                if c_matches and c_matches[0]["similarity"] > 0.7:
+                    top = c_matches[0]
+                    _log(f"  📌 「{c['text'][:25]}」→ sim={top['similarity']:.3f} {top['title'][:30]}")
+                else:
+                    _log(f"  🆕 「{c['text'][:25]}」→ 謠言庫無高度相似")
+            except Exception:
+                c["rumor_matches"] = []
 
     # 5. Retrieve
     retrieve_result = None

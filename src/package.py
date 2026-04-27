@@ -133,17 +133,23 @@ def to_markdown(pkg: dict) -> str:
     lines += ["## 聲明拆解", ""]
     claims = pkg.get("claims", [])
     if claims:
-        lines.append("| # | 聲明 | 證據 | 來源 | 狀態 |")
-        lines.append("|---|------|------|------|------|")
+        lines.append("| # | 聲明 | 證據 | 來源 | 狀態 | 謠言庫比對 |")
+        lines.append("|---|------|------|------|------|-----------|")
         for i, c in enumerate(claims):
-            claim_text = c.get("text", "")[:60]
+            claim_text = c.get("text", "")[:50]
             ev = c.get("evidence", [])
             ev_summary = f"{len(ev)} 筆" if ev else "—"
             sources = ", ".join(sorted({e.get("source_type", "web") for e in ev})) if ev else "—"
             assessment = c.get("assessment", {})
             verdict = assessment.get("verdict", "pending")
             status = STATUS_EMOJI.get(verdict, "⏳") + " " + verdict
-            lines.append(f"| {i+1} | {claim_text} | {ev_summary} | {sources} | {status} |")
+            # Claim-level match
+            rm = c.get("rumor_matches", [])
+            if rm and rm[0].get("similarity", 0) > 0.6:
+                rm_text = f"sim={rm[0]['similarity']:.2f} [{rm[0].get('match_type','')}]({rm[0].get('url','')})"
+            else:
+                rm_text = "—"
+            lines.append(f"| {i+1} | {claim_text} | {ev_summary} | {sources} | {status} | {rm_text} |")
     else:
         lines.append("（無聲明）")
     lines.append("")
