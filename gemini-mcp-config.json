@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "anseropolis": {
+      "command": "python3",
+      "args": ["-m", "src.mcp_server"],
+      "cwd": "/path/to/anseropolis"
+    }
+  }
+}
