@@ -7,10 +7,7 @@ from src.llm import chat as _chat
 from pathlib import Path
 
 
-SYSTEM_PROMPT = """你是事實查核分析師。你的任務是從文字中找出所有包含具體事實的聲明。
-即使文字很短，只要包含可以驗證真偽的具體說法（如數字、事件、人名、政策），就要提取出來。
-用JSON陣列回覆：[{"text": "聲明內容", "difficulty": "easy/medium/hard"}]
-至少提取1個聲明。如果整段都是意見沒有事實，才回覆 []"""
+SYSTEM_PROMPT = """你是事實查核員。提取可查核的事實聲明。用JSON陣列回覆：[{"text": "聲明", "difficulty": "easy/medium/hard"}]"""
 
 VISION_SYSTEM = """你是事實查核分析師。分析圖片內容，提取可查核的事實聲明。
 用JSON回覆：{"description": "圖片描述", "claims": [{"text": "聲明", "difficulty": "easy/medium/hard"}]}"""
@@ -50,7 +47,7 @@ def decompose(text: str, image_path: str = None) -> dict:
         clean = re.sub(r'^(快轉[！!]?\s*|轉傳[！!]?\s*|不轉不是[^\s]*\s*)', '', text)
         messages = [
             {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": f"提取以下文字的可查核聲明：\n\n{clean}"},
+            {"role": "user", "content": clean},
         ]
         for attempt in range(3):
             raw = _chat(messages)

@@ -23,4 +23,4 @@ CKIP_BATCH_PY = os.environ.get("ANSEROPOLIS_CKIP_BATCH_PY") or None  # path to c
 
 EMBED_MODEL_DIR = os.environ.get("ANSEROPOLIS_EMBED_DIR") or None
 
-LLM_MODEL = os.environ.get("ANSEROPOLIS_LLM_MODEL", "gemma4")
+LLM_MODEL = os.environ.get("ANSEROPOLIS_LLM_MODEL", "ministral")
