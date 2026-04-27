@@ -52,16 +52,6 @@ playwright install chromium
 pip install ckip-transformers
 ```
 
-### 方法三：沒有 Apple Silicon
-
-```bash
-pip install playwright numpy jieba pyyaml
-playwright install chromium
-export ANSEROPOLIS_LLM_URL=http://老師IP:8080/v1/chat/completions
-```
-
-LLM 步驟由老師的 server 處理。ingest/match/score 仍在本地跑。
-
 ### 系統需求
 
 | 項目 | 最低 | 建議 |
