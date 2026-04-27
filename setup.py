@@ -43,8 +43,7 @@ def main():
         load("mlx-community/Ministral-8B-Instruct-2412-4bit")
         print("   ✅ 模型就緒")
     except ImportError:
-        print("   ⚠️  mlx-lm 未安裝，跳過")
-        print("   → 設定 ANSEROPOLIS_LLM_URL=http://老師IP:8080/v1/chat/completions")
+        print("   ⚠️  mlx-lm 未安裝，LLM 步驟可在 Claude Code 中由 AI 代勞")
     except Exception as e:
         print(f"   ⚠️  {e}")
 

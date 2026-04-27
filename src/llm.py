@@ -114,7 +114,7 @@ def _ensure_backend():
         return
     raise ConnectionError(
         "無法啟動 LLM。請安裝 mlx-lm (`pip install mlx-lm`) "
-        "或啟動 llama-server，或讓老師的 agent 代勞。"
+        "或啟動 llama-server，或在 Claude Code 中讓 AI 代勞。"
     )
 
 

@@ -44,16 +44,11 @@ python3 -m src.run "網傳台積電整廠搬遷美國"
 
 ## 常見問題
 
-- **mlx-lm 安裝失敗**：需要 Apple Silicon。Intel Mac 改連老師 server
+- **mlx-lm 安裝失敗**：需要 Apple Silicon (M1/M2/M3) + macOS 13.5+
 - **numpy 版本衝突**：`pip install --upgrade numpy`
 - **CKIP 載入慢**：第一次會下載 BERT 模型（~400MB×2），之後快取
 - **記憶體不足**：用 3B 模型 `ANSEROPOLIS_MLX_MODEL=mlx-community/Ministral-3B-Instruct-2512-4bit`
 
-## 如果學生沒有 Apple Silicon
+## 如果 mlx-lm 無法使用
 
-```bash
-export ANSEROPOLIS_LLM_URL=http://老師IP:8080/v1/chat/completions
-pip install playwright numpy jieba pyyaml
-playwright install chromium
-```
-不需要 mlx-lm，LLM 步驟由老師的 server 處理。ingest/match/score 仍在本地跑。
+不需要外部 server。在 Claude Code 中操作時，AI 會直接代勞 LLM 步驟（decompose、retrieve assessment、diff），其他步驟（ingest、match、score）仍在本地跑。
