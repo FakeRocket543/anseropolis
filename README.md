@@ -66,7 +66,7 @@ pip install ckip-transformers
 
 ## 使用方式
 
-### 1. 互動教學模式（推薦給學生）
+### 1. 互動模式（推薦）
 
 ```bash
 python3 -m src.run --interactive
@@ -239,8 +239,8 @@ ingest → match → decompose → retrieve → diff → score → package → r
 ### `src/render.py` — 圖卡渲染
 **Tailwind + Playwright：** 中文排版好、改色系容易、品質等同瀏覽器。
 
-### `src/interactive.py` — 互動教學模式
-**POE 教學法：** 讓學生先觀察語言特徵（預測），再看 AI 結果（觀察），最後反思（解釋）。
+### `src/interactive.py` — 互動模式
+**POE 模式：** 先觀察語言特徵（預測），再看 AI 結果（觀察），最後反思（解釋）。
 
 ### `src/agent.py` — Agent 模式
 LLM 拿到 6 個 skills，自主決定查核策略。Pipeline 是固定流程，Agent 是靈活流程。
@@ -312,13 +312,13 @@ LLM 拿到 6 個 skills，自主決定查核策略。Pipeline 是固定流程，
 | 國台辦敘事偵測 | ✗ | ✗ | ✓ |
 | 結構化 diff | ✗ | ✗ | ✓ |
 | 可疑度評分 | ✗ | ✗ | ✓ (0-100) |
-| 教學互動模式 | ✗ | ✗ | ✓ |
+| 互動模式 | ✗ | ✗ | ✓ |
 
 ---
 
 ## 與 Collatro 的關係
 
-[Collatro](https://github.com/FakeRocket543/collatro) 是教學簡化版。
+[Collatro](https://github.com/FakeRocket543/collatro) 是簡化版。
 
 | | Collatro | Anseropolis |
 |---|---|---|
@@ -327,7 +327,7 @@ LLM 拿到 6 個 skills，自主決定查核策略。Pipeline 是固定流程，
 | 判斷依據 | 聲明 vs 證據的差異 | 語言特徵 + 庫比對 + 證據 |
 | 適合 | 初學者（學方法） | 進階（學偵測） |
 
-**教學建議：先 Collatro 學「怎麼查」，再 Anseropolis 學「怎麼看出可疑」。**
+**建議：先 Collatro 學「怎麼查」，再 Anseropolis 學「怎麼看出可疑」。**
 
 ---
 
