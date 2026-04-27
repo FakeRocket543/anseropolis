@@ -1,11 +1,12 @@
-"""anseropolis.llm — LLM inference with three-tier fallback.
+"""anseropolis.llm — LLM inference with three-tier fallback + auto-unload.
 
-Tier 1: mlx-lm (in-process, Apple Silicon native)
+Tier 1: mlx-lm (in-process, Apple Silicon native) — load on demand, unload after
 Tier 2: llama-server subprocess (auto start/kill)
 Tier 3: external server (localhost:8080)
 """
 
 import atexit
+import gc
 import json
 import os
 import shutil
@@ -21,20 +22,38 @@ _mlx_model = None
 _mlx_tokenizer = None
 _llama_proc = None
 _backend = None  # "mlx" | "subprocess" | "external" | None
+_mlx_available = None  # cached check
 
 MLX_MODEL_ID = os.environ.get("ANSEROPOLIS_MLX_MODEL", "mlx-community/Ministral-8B-Instruct-2412-4bit")
-LLAMA_GGUF = os.environ.get("ANSEROPOLIS_GGUF", "")  # path to .gguf file
+LLAMA_GGUF = os.environ.get("ANSEROPOLIS_GGUF", "")
 
 
-def _try_mlx():
+def _load_mlx():
     global _mlx_model, _mlx_tokenizer, _backend
+    from mlx_lm import load
+    _mlx_model, _mlx_tokenizer = load(MLX_MODEL_ID)
+    _backend = "mlx"
+
+
+def _unload_mlx():
+    """Release mlx model from memory."""
+    global _mlx_model, _mlx_tokenizer
+    _mlx_model = None
+    _mlx_tokenizer = None
+    gc.collect()
+
+
+def _try_mlx_available():
+    """Check if mlx-lm is importable (without loading model)."""
+    global _mlx_available
+    if _mlx_available is not None:
+        return _mlx_available
     try:
-        from mlx_lm import load
-        _mlx_model, _mlx_tokenizer = load(MLX_MODEL_ID)
-        _backend = "mlx"
-        return True
-    except (ImportError, Exception):
-        return False
+        import mlx_lm  # noqa: F401
+        _mlx_available = True
+    except ImportError:
+        _mlx_available = False
+    return _mlx_available
 
 
 def _try_subprocess():
@@ -86,7 +105,8 @@ def _ensure_backend():
     global _backend
     if _backend:
         return
-    if _try_mlx():
+    if _try_mlx_available():
+        _backend = "mlx"  # will load on demand
         return
     if _try_external():
         return
@@ -99,21 +119,28 @@ def _ensure_backend():
 
 
 def chat(messages: list, max_tokens: int = 512, tools: list = None) -> dict | str:
-    """Call LLM. Returns str (content) if no tools, full response dict if tools provided."""
+    """Call LLM. Returns str if no tools, full response dict if tools provided.
+    MLX model is loaded on demand and unloaded after each call to free RAM."""
     _ensure_backend()
 
     if _backend == "mlx":
-        # mlx-lm doesn't support tool calling; return content only
         return _chat_mlx(messages, max_tokens)
     else:
         return _chat_http(messages, max_tokens, tools)
 
 
 def _chat_mlx(messages: list, max_tokens: int) -> str:
+    global _mlx_model, _mlx_tokenizer
+    # Load on demand
+    if _mlx_model is None:
+        _load_mlx()
     from mlx_lm import generate
     from mlx_lm.utils import apply_chat_template
     prompt = apply_chat_template(_mlx_tokenizer, messages)
-    return generate(_mlx_model, _mlx_tokenizer, prompt=prompt, max_tokens=max_tokens, verbose=False)
+    result = generate(_mlx_model, _mlx_tokenizer, prompt=prompt, max_tokens=max_tokens, verbose=False)
+    # Unload after use to free ~5GB RAM
+    _unload_mlx()
+    return result
 
 
 def _chat_http(messages: list, max_tokens: int, tools: list = None) -> dict | str:
