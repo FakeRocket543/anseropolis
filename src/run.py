@@ -13,7 +13,7 @@ def _log(msg: str):
     print(f"🪿 {msg}", flush=True)
 
 
-def run(text: str, output_dir: str = None) -> dict:
+def run(text: str, output_dir: str = None, theme: str = None) -> dict:
     """Run full pipeline on text. Returns package dict."""
     from src.ingest import ingest
     from src.ingest import embed_text
@@ -95,7 +95,7 @@ def run(text: str, output_dir: str = None) -> dict:
     if claims:
         _log("搜尋證據… (search + LLM)")
         try:
-            retrieve_result = retrieve(claims)
+            retrieve_result = retrieve(claims, enrich_result=enrich_result)
             for c in retrieve_result:
                 v = c.get("assessment", {}).get("verdict", "?")
                 _log(f"  [{v}] {c['text'][:40]}")
@@ -107,10 +107,54 @@ def run(text: str, output_dir: str = None) -> dict:
     elif not claims:
         _log("  ⏭ 無聲明（LLM 未啟用或無可查核內容）")
 
-    # 6. Package
+    # 5.5 Diff (NER/number/timeline structured comparison)
+    if retrieve_result:
+        _log("結構化比對… (NER/數字/時間線)")
+        try:
+            from src.diff import diff as run_diff
+            retrieve_result = run_diff(retrieve_result)
+            for c in retrieve_result:
+                d = c.get("diff", {})
+                n_issues = len(d.get("ner", [])) + len(d.get("numbers", [])) + len(d.get("timeline", []))
+                _log(f"  [{d.get('verdict','?')}] {n_issues} 項差異 — {c['text'][:30]}")
+        except ConnectionError:
+            _log("  ⏭ LLM 不可用，跳過結構化比對")
+        except Exception:
+            _log("  ⚠ 結構化比對失敗，繼續")
+
+    # 6. Score
+    from src.score import score as compute_score, highlight_text
+    top_match = match_result[0] if match_result else None
+    score_result = compute_score(
+        text,
+        tokens=ingest_result.get("ws"),
+        match_result=top_match,
+        claim_matches=claims if claims else None,
+        retrieve_result=retrieve_result,
+    )
+    _log(f"可疑度：{score_result['total']}/100 ({score_result['label']})")
+    if score_result["phrases"]:
+        marked = highlight_text(text, score_result["phrases"])
+        _log(f"  標記：{marked[:60]}")
+        for p in score_result["phrases"]:
+            _log(f"  ⚡ [{p['label']}] 「{p['phrase']}」")
+
+    # 7. Package
     _log("組裝題目包…")
     pkg = package(text, ingest_result, match_result, decompose_result, retrieve_result, enrich_result)
+    pkg["score"] = score_result
     md_path = save(pkg, output_dir)
+
+    # 8. Render card (if theme specified)
+    if theme:
+        _log(f"產生圖卡… (theme={theme})")
+        try:
+            from src.render import render as render_card
+            card_path = render_card(pkg, theme=theme)
+            _log(f"  → {card_path}")
+        except Exception as e:
+            _log(f"  ⚠ 圖卡產生失敗：{e}")
+
     elapsed = round(time.time() - t0, 1)
     _log(f"完成！耗時 {elapsed}s → {md_path}")
 
@@ -125,7 +169,16 @@ def main():
     parser.add_argument("text", nargs="?", help="待查核文字")
     parser.add_argument("--file", "-f", help="從檔案讀取文字")
     parser.add_argument("--output", "-o", default=None, help="輸出目錄 (預設: config OUTPUT_DIR)")
+    parser.add_argument("--theme", "-t", default=None,
+                        help="色系主題，產生 1080×1080 圖卡（推薦：slate, sky, emerald, amber, violet, rose）")
+    parser.add_argument("--interactive", "-i", action="store_true",
+                        help="互動問答模式，引導學生逐步完成查核")
     args = parser.parse_args()
+
+    if args.interactive:
+        from src.interactive import interactive_mode
+        interactive_mode(theme=args.theme or "slate", output_dir=args.output)
+        return
 
     if args.file:
         text = Path(args.file).read_text(encoding="utf-8").strip()
@@ -140,7 +193,7 @@ def main():
         sys.exit(1)
 
     try:
-        run(text, args.output)
+        run(text, args.output, theme=args.theme)
     except KeyboardInterrupt:
         print("\n🪿 中斷。")
         sys.exit(130)

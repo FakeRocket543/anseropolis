@@ -3,5 +3,10 @@ output/
 __pycache__/
 *.pyc
 
-# Large embeddings — except the public report index (28MB, required for match)
-# data/report_embeddings.npz is tracked
+# Large corpus files (scraped media)
+data/*_corpus.txt
+data/media_embeddings.npz
+data/media_fingerprints.json
+data/tao_fingerprints.json
+data/fingerprints_tao_vs_udn.json
+data/wantdaily_corpus.txt

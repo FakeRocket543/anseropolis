@@ -13,11 +13,80 @@ DDG_URL = "https://html.duckduckgo.com/html/"
 
 MAX_RESULTS = 5
 
+# ── Engine routing by domain ──
+
+DOMAIN_ENGINES = {
+    "medical": "google news,pubmed,google scholar",
+    "science": "google news,arxiv,google scholar,semantic scholar",
+    "military": "google news,bing news,brave.news,wikinews",
+    "politics": "google news,bing news,brave.news,wikinews",
+    "china": "google news,bing news,sogou wechat,baidu",
+    "international": "google news,bing news,reuters,brave.news",
+    "finance": "google news,bing news",
+    "entertainment": "google news,bing news,youtube",
+}
+
+DOMAIN_LANG = {
+    "china": "zh-CN",
+}
+
+# Category keywords → domain
+_CAT_DOMAIN_MAP = {
+    "醫": "medical", "藥": "medical", "疾病": "medical", "健康": "medical",
+    "生物": "science", "物理": "science", "化學": "science", "科技": "science",
+    "軍事": "military", "國防": "military", "武器": "military", "戰爭": "military",
+    "政治": "politics", "政黨": "politics", "選舉": "politics", "立法": "politics",
+    "中華人民共和國": "china", "中国": "china", "中國大陸": "china",
+    "經濟": "finance", "金融": "finance", "股票": "finance",
+    "演員": "entertainment", "歌手": "entertainment", "電影": "entertainment",
+}
+
+_COUNTRY_DOMAIN_MAP = {
+    "Q148": "china",  # 中華人民共和國
+}
 
 
-def _searxng(query: str) -> list[dict]:
+def route_engines(enrich_result: dict | None) -> tuple[str, str]:
+    """Pick SearXNG engines + language based on KG categories/country.
+    Returns (engines_csv, language)."""
+    if not enrich_result:
+        return ("", "zh-TW")
+
+    # Collect all categories
+    cats = list((enrich_result.get("all_categories") or {}).keys())
+    # Collect countries from wikidata
+    countries = set()
+    for e in enrich_result.get("entities", []):
+        for c in e.get("wikidata", {}).get("country", []):
+            countries.add(c)
+
+    # Match domain: country first, then categories
+    domain = None
+    for c in countries:
+        if c in _COUNTRY_DOMAIN_MAP:
+            domain = _COUNTRY_DOMAIN_MAP[c]
+            break
+
+    # Category refines (medical/science override country)
+    for cat in cats:
+        for kw, d in _CAT_DOMAIN_MAP.items():
+            if kw in cat:
+                if d in ("medical", "science") or not domain:
+                    domain = d
+                break
+        if domain and domain not in ("china", "international"):
+            break
+
+    engines = DOMAIN_ENGINES.get(domain, "")
+    lang = DOMAIN_LANG.get(domain, "zh-TW")
+    return (engines, lang)
+
+
+def _searxng(query: str, engines: str = "", language: str = "zh-TW") -> list[dict]:
     """SearXNG JSON API."""
-    url = f"{SEARXNG_URL}?q={quote_plus(query)}&format=json&language=zh-TW"
+    url = f"{SEARXNG_URL}?q={quote_plus(query)}&format=json&language={language}"
+    if engines:
+        url += f"&engines={quote_plus(engines)}"
     req = Request(url, headers={"Accept": "application/json"})
     resp = urlopen(req, timeout=15)
     data = json.loads(resp.read())
@@ -77,10 +146,11 @@ def _classify_source(url: str) -> str:
     return "web"
 
 
-def search(query: str) -> list[dict]:
-    """Search via SearXNG, fall back to DuckDuckGo."""
+def search(query: str, enrich_result: dict | None = None) -> list[dict]:
+    """Search via SearXNG (with engine routing), fall back to DuckDuckGo."""
+    engines, lang = route_engines(enrich_result)
     try:
-        results = _searxng(query)
+        results = _searxng(query, engines=engines, language=lang)
         if results:
             return results
     except (URLError, OSError, TimeoutError):
@@ -132,11 +202,12 @@ def assess(claim_text: str, evidence: list[dict]) -> dict:
 
 # ── Main entry ──
 
-def retrieve(claims: list[dict]) -> list[dict]:
+def retrieve(claims: list[dict], enrich_result: dict | None = None) -> list[dict]:
     """Search evidence and assess each claim.
 
     Args:
         claims: list of dicts with at least 'text'; optionally 'keywords', 'search_suggestions'.
+        enrich_result: output from enrich() for engine routing.
     Returns:
         list of dicts: each claim enriched with 'evidence' and 'assessment'.
     """
@@ -147,7 +218,7 @@ def retrieve(claims: list[dict]) -> list[dict]:
         keywords = claim.get("keywords") or claim.get("search_suggestions")
         query = " ".join(keywords) if keywords else text
 
-        evidence = search(query)
+        evidence = search(query, enrich_result=enrich_result)
         assessment = assess(text, evidence)
 
         results.append({

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { margin: 0; width: 1080px; height: 1080px; }
+  .card { width: 1080px; min-height: 1080px; }
+</style>
+</head>
+<body>
+<div class="card bg-{{bg_dark}} text-white p-12 flex flex-col">
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-5">
+    <h1 class="text-3xl font-bold text-{{accent}}">Anseropolis 🪿</h1>
+    <span class="text-sm text-{{text_muted}}">謠言查核卡</span>
+  </div>
+
+  <!-- Original text -->
+  <div class="bg-{{bg_card}} rounded-xl p-5 mb-5">
+    <div class="text-xs text-{{text_muted}} mb-1 uppercase tracking-wide">待查核訊息</div>
+    <p class="text-base leading-relaxed">{{original_text}}</p>
+  </div>
+
+  <!-- Score + phrases -->
+  <div class="flex items-center gap-4 mb-4">
+    <div class="text-5xl font-black {{score_color}}">{{score}}</div>
+    <div>
+      <div class="text-xl font-bold">{{score_label}}</div>
+      <div class="text-sm text-{{text_muted}}">可疑度 /100</div>
+    </div>
+    {{suspect_phrases}}
+  </div>
+
+  <!-- Top match -->
+  {{match_section}}
+
+  <!-- Claims with verdicts -->
+  <div class="space-y-2 mb-4">
+    {{claims}}
+  </div>
+
+  <!-- Diff section -->
+  {{diff_section}}
+
+  <!-- Footer -->
+  <div class="mt-auto pt-4 border-t border-{{border}} text-xs text-{{text_dim}}">
+    {{footer}}
+  </div>
+</div>
+</body>
+</html>
