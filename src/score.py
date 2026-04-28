@@ -247,13 +247,18 @@ _SPECTRUM_LABELS = {
 
 
 def scan_political(text: str, tokens: list[str] = None) -> dict:
-    """Score text on political spectrum using BM25-derived indicator lexicon.
+    """Score text on political spectrum using TF-IDF fingerprints + indicator lexicon.
 
     Returns:
         {"group": str, "label": str, "score": float,
-         "all_scores": {group: score}, "hits": {group: [terms]}}
+         "all_scores": {group: score}, "hits": {group: [terms]},
+         "tfidf_scores": {source: cosine_sim}}
     """
-    scores = {}
+    # --- Layer 1: TF-IDF fingerprint cosine similarity ---
+    tfidf_scores = _tfidf_classify(text)
+
+    # --- Layer 2: Indicator lexicon (hard signals) ---
+    lex_scores = {}
     hits = {}
     for group, lexicon in _POLITICAL_INDICATORS.items():
         s = 0.0
@@ -262,23 +267,121 @@ def scan_political(text: str, tokens: list[str] = None) -> dict:
             if term in text:
                 s += weight
                 matched.append(term)
-        scores[group] = s
+        lex_scores[group] = s
         hits[group] = matched
 
-    top_group = max(scores, key=scores.get)
-    top_score = scores[top_group]
+    # --- Combine: lexicon dominates if strong, else use TF-IDF ---
+    top_lex_group = max(lex_scores, key=lex_scores.get)
+    top_lex_score = lex_scores[top_lex_group]
 
-    if top_score == 0:
-        return {"group": "neutral", "label": "中立", "score": 0,
-                "all_scores": scores, "hits": hits}
+    if top_lex_score >= 3.0:
+        # Strong lexicon signal → use it
+        group = top_lex_group
+        score_val = top_lex_score
+    elif tfidf_scores:
+        # Use TF-IDF grouping
+        group_tfidf = _aggregate_tfidf_by_group(tfidf_scores)
+        top_tfidf_group = max(group_tfidf, key=group_tfidf.get)
+        if group_tfidf[top_tfidf_group] > 0.02:
+            group = top_tfidf_group
+            score_val = group_tfidf[top_tfidf_group] * 10  # scale to ~0-10
+        else:
+            group = "neutral"
+            score_val = 0
+    else:
+        group = "neutral"
+        score_val = 0
+
+    label = _SPECTRUM_LABELS.get(group, "中立")
 
     return {
-        "group": top_group,
-        "label": _SPECTRUM_LABELS[top_group],
-        "score": top_score,
-        "all_scores": scores,
+        "group": group,
+        "label": label,
+        "score": round(score_val, 2),
+        "all_scores": lex_scores,
         "hits": {g: h for g, h in hits.items() if h},
+        "tfidf_scores": tfidf_scores,
     }
+
+
+# ── TF-IDF fingerprint matching ──
+
+_POLITICAL_FP: dict = {}
+_POLITICAL_FP_PATH = Path(__file__).parent.parent / "data" / "political_fingerprints.json"
+
+_GROUP_MAP = {
+    "tao": "cn_official", "people": "cn_official",
+    "huanqiu": "cn_media",
+    "wantdaily": "tw_blue_cn",
+    "ct": "tw_blue", "cnews": "tw_blue",
+    "ettoday": "tw_neutral",
+    "ltn": "tw_green",
+    "epoch": "anti_ccp",
+    "rumor": "rumor",
+}
+
+
+def _load_political_fp():
+    global _POLITICAL_FP
+    if _POLITICAL_FP:
+        return
+    import json as _json
+    if _POLITICAL_FP_PATH.exists():
+        data = _json.load(open(_POLITICAL_FP_PATH))
+        _POLITICAL_FP = data.get("fingerprints", {})
+
+
+def _tfidf_classify(text: str) -> dict:
+    """Compute cosine similarity between text TF and each source's TF-IDF profile."""
+    _load_political_fp()
+    if not _POLITICAL_FP:
+        return {}
+
+    import re as _re
+    try:
+        import jieba as _jieba
+        import opencc as _opencc
+        _cc = _opencc.OpenCC("s2t")
+        text = _cc.convert(text)
+        tokens = [w for w in _jieba.cut(text)
+                  if len(w) >= 2 and _re.fullmatch(r'[\u4e00-\u9fff]+', w)]
+    except ImportError:
+        tokens = list(text)
+
+    if not tokens:
+        return {}
+
+    tf = {}
+    total = len(tokens)
+    for t in tokens:
+        tf[t] = tf.get(t, 0) + 1
+    for t in tf:
+        tf[t] /= total
+
+    # Cosine similarity with each source fingerprint
+    scores = {}
+    for source, fp in _POLITICAL_FP.items():
+        dot = sum(tf.get(w, 0) * s for w, s in fp.items())
+        norm_fp = sum(s * s for s in fp.values()) ** 0.5
+        norm_tf = sum(v * v for v in tf.values()) ** 0.5
+        if norm_fp > 0 and norm_tf > 0:
+            scores[source] = dot / (norm_fp * norm_tf)
+        else:
+            scores[source] = 0.0
+
+    return scores
+
+
+def _aggregate_tfidf_by_group(tfidf_scores: dict) -> dict:
+    """Aggregate per-source TF-IDF scores into group scores."""
+    group_scores = {}
+    group_counts = {}
+    for source, sim in tfidf_scores.items():
+        g = _GROUP_MAP.get(source, source)
+        group_scores[g] = group_scores.get(g, 0) + sim
+        group_counts[g] = group_counts.get(g, 0) + 1
+    # Average per group
+    return {g: group_scores[g] / group_counts[g] for g in group_scores}
 
 
 # ── Self-test ──
