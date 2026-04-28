@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="doc/logo.webp" alt="Anseropolis Logo" width="360">
+  <img src="doc/logo.webp" alt="Anseropolis Logo" width="640">
 </p>
 
 # Anseropolis 🪿
