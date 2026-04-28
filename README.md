@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="doc/logo.webp" alt="Anseropolis Logo" width="200">
+</p>
+
 # Anseropolis 🪿
 
 > 台灣茶鵝實驗改良場 — Taiwan Tea Goose Experiment & Improvement Station
