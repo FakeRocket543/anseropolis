@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="doc/logo.webp" alt="Anseropolis Logo" width="200">
+  <img src="doc/logo.webp" alt="Anseropolis Logo" width="360">
 </p>
 
 # Anseropolis 🪿
@@ -35,18 +35,43 @@ python3 setup.py
 ```
 輸入文字
   ↓
-CKIP 斷詞 + 實體提取（人/機構/地/時/事/數字）
+ingest — CKIP 斷詞 + 實體提取 + 語言指紋 + embedding
   ↓
-可疑詞典比對（suspect_lexicon + tao_lexicon）
+match — cosine kNN 比對已知語料庫（12+ 來源）
   ↓
-語言指紋分析（詞頻分布 vs 已知來源指紋）
+decompose — LLM 聲明拆解
   ↓
-Wikidata KG 查詢（驗證人物/機構身份）
+retrieve — 搜尋引擎 + 證據評估
   ↓
-可疑度評分 + 敘事框架歸類
+score — 可疑詞典 + TAO 敘事詞 + 指紋加權評分
   ↓
-產出：分析報告 + 圖卡
+package — 分析報告 + 圖卡產出
 ```
+
+兩種執行模式：
+- **Pipeline 模式**（`python3 -m src.run`）— 固定流程，可預測，適合批次
+- **Agent 模式**（`python3 -m src.interactive`）— LLM 自主決策，適合深度分析
+
+也可透過 **MCP Server**（`src/mcp_server.py`）或 **HTTP API**（`src/serve.py`）整合到其他工具。
+
+## 語料庫
+
+已建立 12+ 來源的語言指紋資料庫，涵蓋不同政治光譜：
+
+| 來源 | 類型 |
+|------|------|
+| 國台辦 | 官方統戰文本 |
+| 環球時報、中評社、人民日報 | 中國大陸官媒 |
+| 自由時報、新頭殼 | 台灣綠營媒體 |
+| 聯合報、中時、旺報 | 台灣藍營媒體 |
+| ETtoday、上報、匯流新聞、風傳媒 | 台灣中間/綜合媒體 |
+| 大紀元 | 海外中文媒體 |
+
+每個來源獨立建模語言指紋，用於比對輸入文本「像誰在說話」。
+
+## 跨語料庫分析
+
+使用 BERTopic + Qwen3-VL-2B Embedding 進行跨來源主題模型分析，識別不同媒體在相同議題上的語言差異模式。詳見 `cross_topic/REPORT.md`。
 
 ## 與 Collatro 的差異
 
@@ -64,6 +89,8 @@ Wikidata KG 查詢（驗證人物/機構身份）
 - **TAO 敘事庫** — 國台辦常用敘事框架的詞典比對
 - **可疑度評分** — 語言指紋加權 40 分 > LLM 反駁率 15 分（Nature Comms 2025 實證支撐）
 - **Wikidata KG** — 結構化事實驗證人物身份
+- **圖卡輸出** — 自動生成視覺化分析圖卡
+- **全本地運行** — 零雲端 API，所有模型本地推論
 - **不下結論** — 可疑度高 ≠ 假的，只代表語言模式異常
 
 ## 學術基礎
@@ -76,7 +103,15 @@ Wikidata KG 查詢（驗證人物/機構身份）
 
 - macOS（Apple Silicon）或 Linux
 - Python 3.10+
+- ~16 GB RAM（所有模型同時載入）
 - AI Agent（OpenCode / Kiro CLI / Claude Code）
+
+## 文件
+
+- [使用指南](doc/GUIDE.md)
+- [技術架構](doc/ARCHITECTURE.md)
+- [Pipeline 設計](doc/pipeline-design.md)
+- [操作手冊](doc/MANUAL.md)
 
 ## 授權
 
