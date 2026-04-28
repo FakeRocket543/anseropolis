@@ -1,0 +1,47 @@
+# Cross-topic modeling config
+corpora:
+  tao:
+    path: data/tao_corpus.txt
+    label: 國台辦
+    group: cn_official
+  people:
+    path: data/people_corpus.txt
+    label: 人民日報
+    group: cn_official
+  huanqiu:
+    path: data/huanqiu_corpus.txt
+    label: 環球網
+    group: cn_media
+  wantdaily:
+    path: data/wantdaily_corpus.txt
+    label: 旺報社評
+    group: tw_blue_cn
+  ct:
+    path: data/ct_corpus.txt
+    label: 中時社論
+    group: tw_blue
+  cnews:
+    path: data/cnews_corpus.txt
+    label: 匯流
+    group: tw_blue
+  ettoday:
+    path: data/ettoday_corpus.txt
+    label: ETtoday
+    group: tw_neutral
+  ltn:
+    path: data/ltn_corpus.txt
+    label: 自由時報
+    group: tw_green
+  epoch:
+    path: data/epoch_corpus.txt
+    label: 大紀元
+    group: anti_ccp
+
+modeling:
+  min_topic_size: 10
+  n_topics_per_corpus: 12
+  max_docs_per_corpus: 100
+  embedding_model: /Volumes/M1350/Tea/tfc-audit/models/Qwen3-VL-Embedding-2B
+
+output:
+  dir: cross_topic/output

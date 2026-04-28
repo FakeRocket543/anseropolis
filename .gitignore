@@ -20,3 +20,4 @@ data/ltn/
 data/storm/
 *.log
 scripts/scrape_*.py
+cross_topic/output/
