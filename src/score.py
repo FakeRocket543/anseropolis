@@ -187,6 +187,7 @@ def score(text: str, tokens: list[str] = None,
             "score": tao_score,
             "phrases": tao_phrases,
         },
+        "political": scan_political(text, tokens),
     }
 
 
@@ -199,6 +200,85 @@ def highlight_text(text: str, phrases: list[dict]) -> str:
         s, e = p["start"], p["end"]
         result = result[:s] + f"【{result[s:e]}】" + result[e:]
     return result
+
+
+# ── Political Spectrum (from cross-topic BM25 analysis) ──
+
+_POLITICAL_INDICATORS = {
+    "cn_official": {
+        "同胞": 3.0, "融合": 2.5, "當局": 2.5, "分裂": 2.0,
+        "頑固": 3.0, "箇中": 3.0, "廣大": 1.5, "祖國": 3.0,
+        "統一": 1.5, "台獨": 2.0, "民進黨當局": 3.0,
+        "兩岸關係和平發展": 2.0, "台灣同胞": 2.5,
+        "堅決反對": 2.0, "勢力": 1.0, "深化": 1.0,
+    },
+    "cn_media": {
+        "中方": 2.0, "特朗普": 3.0, "同比": 2.0, "一季度": 2.0,
+        "高質量發展": 2.5, "新質生產力": 3.0, "人民群眾": 2.0,
+        "黨中央": 2.5, "總書記": 2.0,
+    },
+    "tw_blue_cn": {
+        "大陸": 2.0, "兄弟": 1.5, "促統": 3.0, "崛起": 1.5,
+        "陸客": 2.0, "陸方": 2.0,
+    },
+    "tw_blue": {
+        "中華民國": 1.5, "偽政權": 3.0,
+        "大陸": 1.5, "國民黨": 1.0, "民進黨": 1.0,
+    },
+    "tw_green": {
+        "中國": 1.0, "中共": 1.5, "主權": 2.5, "民主": 1.5,
+        "假訊息": 2.0, "威脅": 1.0, "國際空間": 2.0, "打壓": 1.5,
+    },
+    "anti_ccp": {
+        "中共": 2.0, "迫害": 3.0, "法輪功": 3.0, "神韻": 3.0,
+        "極權": 2.5, "暴政": 3.0, "中共政權": 3.0,
+        "習近平政權": 2.5, "滲透": 2.0,
+    },
+}
+
+_SPECTRUM_LABELS = {
+    "cn_official": "中共官方",
+    "cn_media": "中共官媒",
+    "tw_blue_cn": "親中藍",
+    "tw_blue": "藍營",
+    "tw_green": "偏綠",
+    "anti_ccp": "反共",
+}
+
+
+def scan_political(text: str, tokens: list[str] = None) -> dict:
+    """Score text on political spectrum using BM25-derived indicator lexicon.
+
+    Returns:
+        {"group": str, "label": str, "score": float,
+         "all_scores": {group: score}, "hits": {group: [terms]}}
+    """
+    scores = {}
+    hits = {}
+    for group, lexicon in _POLITICAL_INDICATORS.items():
+        s = 0.0
+        matched = []
+        for term, weight in lexicon.items():
+            if term in text:
+                s += weight
+                matched.append(term)
+        scores[group] = s
+        hits[group] = matched
+
+    top_group = max(scores, key=scores.get)
+    top_score = scores[top_group]
+
+    if top_score == 0:
+        return {"group": "neutral", "label": "中立", "score": 0,
+                "all_scores": scores, "hits": hits}
+
+    return {
+        "group": top_group,
+        "label": _SPECTRUM_LABELS[top_group],
+        "score": top_score,
+        "all_scores": scores,
+        "hits": {g: h for g, h in hits.items() if h},
+    }
 
 
 # ── Self-test ──
@@ -221,13 +301,18 @@ if __name__ == "__main__":
     for text, tokens in tests:
         r = score(text, tokens=tokens)
         phrases = r["phrases"]
+        pol = r["political"]
         print(f"\n{'='*60}")
         print(f"📝 {text}")
         print(f"   分數: {r['total']}/100 ({r['label']})")
+        print(f"   政治光譜: {pol['label']} ({pol['score']:.1f})")
+        if pol.get("hits"):
+            for g, terms in pol["hits"].items():
+                if terms:
+                    print(f"     {_SPECTRUM_LABELS[g]}: {', '.join(terms)}")
         if phrases:
             print(f"   可疑語句:")
             for p in phrases:
                 print(f"     [{p['label']}] 「{p['phrase']}」(+{p['weight']})")
-            print(f"   標記: {highlight_text(text, phrases)}")
         else:
             print(f"   ✅ 無可疑語句")
