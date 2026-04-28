@@ -3,13 +3,19 @@ output/
 __pycache__/
 *.pyc
 
-# Large corpus files (scraped media)
+# Large corpus files (scraped media) - not public
 data/*_corpus.txt
+data/unified_schema.json
+data/unified_embeddings.npz
+data/political_coordinates.json
 data/media_embeddings.npz
 data/media_fingerprints.json
 data/tao_fingerprints.json
+data/tao_ngram_embeddings.npz
 data/fingerprints_tao_vs_udn.json
-data/wantdaily_corpus.txt
 
 # Literature references (local only)
-references/
+references/data/crntt_*
+data/ltn/
+data/storm/
+*.log
