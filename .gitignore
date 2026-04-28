@@ -19,3 +19,4 @@ references/data/crntt_*
 data/ltn/
 data/storm/
 *.log
+scripts/scrape_*.py
